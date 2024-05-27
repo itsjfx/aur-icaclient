@@ -10,7 +10,7 @@ Requires=ctxcwalogd.service
 Type=forking
 Restart=always
 ExecStartPre=mkdir -m 700 -p /var/run/ctxusbd
-ExecStart=/opt/Citrix/ICAClient/usb/ctxusbd
+ExecStart=/opt/Citrix/ICAClient/ctxusbd
 ExecStopPost=rm -rf /var/run/ctxusbd
 
 [Install]

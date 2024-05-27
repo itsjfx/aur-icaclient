@@ -8,7 +8,7 @@
 
 pkgname=icaclient
 pkgver=24.2.0.65
-pkgrel=1
+pkgrel=2
 pkgdesc="Citrix Workspace App (a.k.a. ICAClient, Citrix Receiver)"
 arch=('x86_64' 'armv7h' 'aarch64')
 url='https://www.citrix.com/downloads/workspace-app/linux/workspace-app-for-linux-latest.html'
@@ -45,7 +45,7 @@ sha256sums=('643427b6e04fc47cd7d514af2c2349948d3b45f536c434ba8682dcb1d4314736'
             'fe0b92bb9bfa32010fe304da5427d9ca106e968bad0e62a5a569e3323a57443f'
             'a3bd74aaf19123cc550cde71b5870d7dacf9883b7e7a85c90e03b508426c16c4'
             '0e3a6c7cf7fa9eee7dcde7356e90ffa1cb312bffc0813a0bf123d2f918dc369d'
-            '739da3fca95d07fc3076522acc6b6c1b12b988047bd2fb3c87e37231e49f2e1f')
+            'c082a227a80a88a144c8ca47bba74127b7d6232c991758241213bfed2b5e7b29')
 sha256sums_x86_64=('eaeb5d3bd079d4e5c9707da67f5f7a25cb765e19c36d01861290655dbf2aaee4')
 sha256sums_armv7h=('fc48258ad7b44dea543b3c05acd8102b380f43e0c357dabc4502feb4204a85b3')
 sha256sums_aarch64=('40ea01606fe7459ba5b7a5a3ac58da1f23f569ea19a643957ccf519d1a3f0cdc')
@@ -77,7 +77,13 @@ package() {
             PrimaryAuthManager ServiceRecord selfservice UtilDaemon wfica
 
     # copy common directories
-    cp -rt "${pkgdir}$ICAROOT" aml clsync config gtk help icons keyboard keystore lib nls site usb util
+    cp -rt "${pkgdir}$ICAROOT" aml clsync config gtk help icons keyboard keystore lib nls site util
+    install -m 755 -t "${pkgdir}$ICAROOT" \
+        usb/VDGUSB.DLL \
+        usb/ctx_usb_isactive
+    install -m 500 -t "${pkgdir}$ICAROOT" usb/ctxusbd
+    install -m 444 -t "${pkgdir}$ICAROOT" usb/usb.conf
+    install -m 4555 -t "${pkgdir}$ICAROOT" usb/ctxusb
 
     # copy x86_64 only directories
     if [[ $CARCH == 'x86_64' ]]
@@ -134,4 +140,14 @@ package() {
     # install systemd unit files
     install -Dm755 -t "${pkgdir}/usr/lib/systemd/system" "ctxcwalogd.service" 
     install -Dm755 -t "${pkgdir}/usr/lib/systemd/system" "ctxusbd.service" 
+
+    # enable USB passthrough
+    sed -i \
+        -e 's/^[ \t]*VirtualDriver[ \t]*=.*$/&, GenericUSB/' \
+        -e '/\[ICA 3.0\]/a\GenericUSB=on' \
+        "${pkgdir}$ICAROOT/config/module.ini"
+    cat <<EOF >>"${pkgdir}$ICAROOT/config/module.ini"
+[GenericUSB]
+DriverName = VDGUSB.DLL
+EOF
 }
